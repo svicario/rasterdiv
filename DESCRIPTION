@@ -1,0 +1,13 @@
+Package: rasterdiv
+Type: Package
+Title: 
+Version: 1.0
+Date: 2020-01-27
+Authors@R: c(person("Nome","cognome",email="....",role=c("aut","cre")),person("Nome","Cognome",role="aut"),person("Nome","Cognome",role="ctb"),....)
+Description: 
+Depends: R (>= 3.5.0)
+Imports: raster,svMisc,parallel,stats,snow,utils,doSNOW,proxy 
+Suggests: Rmpi,sp 
+License: GPL(>=2)
+Encoding: UTF-8
+

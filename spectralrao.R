@@ -115,144 +115,142 @@ spectralrao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="c
       #
       ## Reshape values
       #
-      values<-as.numeric(as.factor(rasterm))
-      rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
+    values<-as.numeric(as.factor(rasterm))
+    rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
       #
       ## Add additional columns and rows to match moving window
       #
-      hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
-      ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
-      trasterm<-cbind(ver,rbind(hor,rasterm_1,hor),ver)
-      rm(hor,ver,rasterm_1,values); gc()
-      if(debugging){cat("#check: RaoQ parallel function.")}
+    hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
+    ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
+    trasterm<-cbind(ver,rbind(hor,rasterm_1,hor),ver)
+    rm(hor,ver,rasterm_1,values); gc()
+    if(debugging){cat("#check: RaoQ parallel function.")}
       #       
       ## Derive distance matrix
       #
-      if( is.character( distance_m) | is.function(distance_m) ) {
-        d1<-proxy::dist(as.numeric(levels(as.factor(rasterm))),method=distance_m)
-      } else if( is.matrix(distance_m) | is.data.frame(distance_m) ) {
-        d1<-stats::as.dist(xtabs(distance_m[, 3] ~ distance_m[, 2] + distance_m[, 1]))
-      }
+    if( is.character( distance_m) | is.function(distance_m) ) {
+      d1<-proxy::dist(as.numeric(levels(as.factor(rasterm))),method=distance_m)
+    } else if( is.matrix(distance_m) | is.data.frame(distance_m) ) {
+      d1<-stats::as.dist(xtabs(distance_m[, 3] ~ distance_m[, 2] + distance_m[, 1]))
+    }
       #
       ## Export variables in the global environment
       #
-      if(isfloat) {
-        sapply(c("mfactor"), function(x) {assign(x,get(x),envir= .GlobalEnv)})
-      }
+    if(isfloat) {
+      sapply(c("mfactor"), function(x) {assign(x,get(x),envir= .GlobalEnv)})
+    }
       #       
       ## Create cluster object with given number of slaves
       #
-      plr<<-TRUE
-      if( cluster.type=="SOCK" || cluster.type=="FORK" ) {
-        cls <- parallel::makeCluster(nc.cores,type=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
-      } else if( cluster.type=="MPI" ) {
-        cls <- makeMPIcluster(nc.cores,outfile="",useXDR=FALSE,methods=FALSE,output="")
-      }
-      registerDoSNOW(cls)
-      clusterCall(cl=cls, function() library("parallel"))
-      if(isfloat) {
-        parallel::clusterExport(cl=cls, varlist=c("mfactor"))
-      }
-      on.exit(stopCluster(cls)) # Close the clusters on exit
-      gc()
+    plr<<-TRUE
+    if( cluster.type=="SOCK" || cluster.type=="FORK" ) {
+      cls <- parallel::makeCluster(nc.cores,type=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
+    } else if( cluster.type=="MPI" ) {
+      cls <- makeMPIcluster(nc.cores,outfile="",useXDR=FALSE,methods=FALSE,output="")
+    }
+    registerDoSNOW(cls)
+    clusterCall(cl=cls, function() library("parallel"))
+    if(isfloat) {
+      parallel::clusterExport(cl=cls, varlist=c("mfactor"))
+    }
+    on.exit(stopCluster(cls)) # Close the clusters on exit
+    gc()
       #
       ## Start the parallelized loop over iter
       #
-      pb <- txtProgressBar(min = (1+w), max = dim(rasterm)[2], style = 3)
-      progress <- function(n) setTxtProgressBar(pb, n)
-      opts <- list(progress = progress)
-      raop <- foreach(cl=(1+w):(dim(rasterm)[2]+w),.options.snow = opts,.verbose = F) %dopar% {
-        if(debugging) {
-          cat(paste(cl))
-        }
-        raout <- sapply((1+w):(dim(rasterm)[1]+w), function(rw) {
-          if( length(!which(!trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]%in%NA)) < window^2-((window^2)*na.tolerance) ) {
+    pb <- txtProgressBar(min = (1+w), max = dim(rasterm)[2], style = 3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+    raop <- foreach(cl=(1+w):(dim(rasterm)[2]+w),.options.snow = opts,.verbose = F) %dopar% {
+      if(debugging) {
+        cat(paste(cl))
+      }
+      raout <- sapply((1+w):(dim(rasterm)[1]+w), function(rw) {
+        if( length(!which(!trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]%in%NA)) < window^2-((window^2)*na.tolerance) ) {
+          vv<-NA
+          return(vv)
+        } 
+        else {
+          tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]),maxsum=10000)
+          if( "NA's"%in%names(tw) ) {
+            tw<-tw[-length(tw)]
+          }
+          if( debugging ) {
+            message("Working on coords ",rw,",",cl,". classes length: ",length(tw),". window size=",window)
+          }
+          tw_labels <- names(tw)
+          tw_values <- as.vector(tw)
+            #if clause to exclude windows with only 1 category
+          if( length(tw_values) <2 ) {
             vv<-NA
             return(vv)
-          } 
-          else {
-            tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]),maxsum=10000)
-            if( "NA's"%in%names(tw) ) {
-              tw<-tw[-length(tw)]
-            }
-            if( debugging ) {
-              message("Working on coords ",rw,",",cl,". classes length: ",length(tw),". window size=",window)
-            }
-            tw_labels <- names(tw)
-            tw_values <- as.vector(tw)
-            #if clause to exclude windows with only 1 category
-            if( length(tw_values) <2 ) {
-              vv<-NA
-              return(vv)
-            }
-            else {
-              p <- tw_values/sum(tw_values)
-              p1 <- diag(0,length(tw_values))
-              p1[upper.tri(p1)] <- c(combn(p,m=2,FUN=prod))
-              d2 <- unname(as.matrix(d1)[as.numeric(tw_labels),as.numeric(tw_labels)])
-              vv <- sum(p1*d2)
-              return(vv)
-            }
           }
-        })
-        return(raout)
-      } # End classic RaoQ - parallelized
-      message(("\n\nCalculation of Rao's index complete.\n"))
+          else {
+            p <- tw_values/sum(tw_values)
+            p1 <- diag(0,length(tw_values))
+            p1[upper.tri(p1)] <- c(combn(p,m=2,FUN=prod))
+            d2 <- unname(as.matrix(d1)[as.numeric(tw_labels),as.numeric(tw_labels)])
+            vv <- sum(p1*d2)
+            return(vv)
+          }
+        }
+      })
+      return(raout)
+    } # End classic RaoQ - parallelized
+    message(("\n\nCalculation of Rao's index complete.\n"))
       #
       ## If classic RaoQ is sequential
       #
-    } else if(nc.cores==1) {
+  } else if(nc.cores==1) {
       # Reshape values
-      values<-as.numeric(as.factor(rasterm))
-      rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
+    values<-as.numeric(as.factor(rasterm))
+    rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
       # Add fake columns and rows for moving window
-      hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
-      ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
-      trasterm<-cbind(ver,rbind(hor,rasterm_1,hor),ver)
+    hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
+    ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
+    trasterm<-cbind(ver,rbind(hor,rasterm_1,hor),ver)
       # Derive distance matrix
-      classes<-levels(as.factor(rasterm))
-      if( is.character(distance_m) | is.function(distance_m) ) {
-        d1<-proxy::dist(as.numeric(classes),method=distance_m)
-      } else if( is.matrix(distance_m) | is.data.frame(distance_m) ) {
-        d1<-stats::as.dist(xtabs(distance_m[, 3] ~ distance_m[, 2] + distance_m[, 1]))
-      }
+    classes<-levels(as.factor(rasterm))
+    if( is.character(distance_m) | is.function(distance_m) ) {
+      d1<-proxy::dist(as.numeric(classes),method=distance_m)
+    } else if( is.matrix(distance_m) | is.data.frame(distance_m) ) {
+      d1<-stats::as.dist(xtabs(distance_m[, 3] ~ distance_m[, 2] + distance_m[, 1]))
+    }
       # Loop over each pixel
-      for (cl in (1+w):(dim(rasterm)[2]+w)) {
-        for(rw in (1+w):(dim(rasterm)[1]+w)) {
-          if( length(!which(!trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]%in%NA)) < window^2-((window^2)*na.tolerance) ) {
+    for (cl in (1+w):(dim(rasterm)[2]+w)) {
+      for(rw in (1+w):(dim(rasterm)[1]+w)) {
+        if( length(!which(!trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]%in%NA)) < window^2-((window^2)*na.tolerance) ) {
+          raoqe[rw-w,cl-w]<-NA
+        } else {
+          tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]),maxsum=10000)
+          if( "NA's"%in%names(tw) ) {
+            tw<-tw[-length(tw)]
+          }
+          if(debugging) {
+            message("Working on coords ",rw ,",",cl,". classes length: ",length(tw),". window size=",window)
+          }
+          tw_labels <- names(tw)
+          tw_values <- as.vector(tw)
+            #if clause to exclude windows with only 1 category
+          if(length(tw_values) < 2) {
             raoqe[rw-w,cl-w]<-NA
           } else {
-            tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]),maxsum=10000)
-            if( "NA's"%in%names(tw) ) {
-              tw<-tw[-length(tw)]
-            }
-            if(debugging) {
-              message("Working on coords ",rw ,",",cl,". classes length: ",length(tw),". window size=",window)
-            }
-            tw_labels <- names(tw)
-            tw_values <- as.vector(tw)
-            #if clause to exclude windows with only 1 category
-            if(length(tw_values) < 2) {
-              raoqe[rw-w,cl-w]<-NA
+            p <- tw_values/sum(tw_values)
+            p1 <- diag(0,length(tw_values))
+            p1[upper.tri(p1)] <- c(combn(p,m=2,FUN=prod))
+            d2 <- unname(as.matrix(d1)[as.numeric(tw_labels),as.numeric(tw_labels)])
+            if(isfloat) {
+              raoqe[rw-w,cl-w]<-sum(p1*d2)/mfactor
             } else {
-              p <- tw_values/sum(tw_values)
-              p1 <- diag(0,length(tw_values))
-              p1[upper.tri(p1)] <- c(combn(p,m=2,FUN=prod))
-              d2 <- unname(as.matrix(d1)[as.numeric(tw_labels),as.numeric(tw_labels)])
-              if(isfloat) {
-                raoqe[rw-w,cl-w]<-sum(p1*d2)/mfactor
-              } else {
-                raoqe[rw-w,cl-w]<-sum(p1*d2)
-              }
+              raoqe[rw-w,cl-w]<-sum(p1*d2)
             }
-          } 
-          progress(value=cl, max.value=c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2, progress.bar = FALSE)
+          }
         } 
-      } # End of for loop 
-      message(("\nCalculation of Rao's index complete.\n"))
-    }
-  }  # End classic RaoQ - sequential
-  else if( mode=="multidimension" ){
+        progress(value=cl, max.value=c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2, progress.bar = FALSE)
+      } 
+    } # End of for loop 
+    message(("\nCalculation of Rao's index complete.\n"))
+  } else if( mode=="multidimension" ){
     if(debugging) {
       message("#check: Into multidimensional clause.")
     }
@@ -377,7 +375,7 @@ spectralrao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="c
           raoqe[rw-w,cl-w] <- NA
         } else {
           tw<-lapply(trastersm, function(x) { x[(rw-w):(rw+w),(cl-w):(cl+w)]
-          })
+        })
           #
           ## Vectorize the matrices in the list and calculate
           #Among matrix pairwase distances
@@ -423,21 +421,21 @@ spectralrao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="c
     ## Loop over all the pixels
     #
     for (cl in (1+w):(dim(rasterm)[2]+w)) {
-        for(rw in (1+w):(dim(rasterm)[1]+w)) {
-            if( length(!which(!trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]%in%NA)) < window^2-((window^2)*na.tolerance) ) {
-                shannond[rw-w,cl-w]<-NA
-            } else {
-                tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]))
-                if( "NA's"%in%names(tw) ) {
-                    tw<-tw[-length(tw)]
-                }
-                tw_values<-as.vector(tw)
-                p<-tw_values/sum(tw_values)
-                p_log<-log(p)
-                shannond[rw-w,cl-w]<-(-(sum(p*p_log)))
-            }
+      for(rw in (1+w):(dim(rasterm)[1]+w)) {
+        if( length(!which(!trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]%in%NA)) < window^2-((window^2)*na.tolerance) ) {
+          shannond[rw-w,cl-w]<-NA
+        } else {
+          tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]))
+          if( "NA's"%in%names(tw) ) {
+            tw<-tw[-length(tw)]
+          }
+          tw_values<-as.vector(tw)
+          p<-tw_values/sum(tw_values)
+          p_log<-log(p)
+          shannond[rw-w,cl-w]<-(-(sum(p*p_log)))
         }
-        svMisc::progress(value=cl, max.value=(c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2), progress.bar = FALSE)
+      }
+      svMisc::progress(value=cl, max.value=(c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2), progress.bar = FALSE)
     } 
     message(("\nCalculation of Shannon's index is also complete!\n"))
   } # End ShannonD

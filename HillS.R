@@ -1,5 +1,5 @@
 HillS <- function(rasterm, w, alpha, debugging){
-  message("\n\nStarting Hill index calculation with parameter value = ",alpha," \n\n\n\n\n")
+  message("\nStarting Hill index calculation with parameter value = ",alpha," \n\n\n\n")
   out<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   # Reshape values
   values<-as.numeric(as.factor(rasterm))

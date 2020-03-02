@@ -169,7 +169,7 @@ Hill <- function(input, window=3, mode ="single", BergerParker=FALSE, alpha=1, n
     if(debugging){cat("#check: Hill parallel function.")}
     plr<<-TRUE
     if( cluster.type=="SOCK" || cluster.type=="FORK" ) {
-      cls <- parallel::makeCluster(nc.cores,typedebugging=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
+      cls <- parallel::makeCluster(nc.cores,type=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
     } else if( cluster.type=="MPI" ) {
       cls <- makeMPIcluster(nc.cores,outfile="",useXDR=FALSE,methods=FALSE,output="")
     }

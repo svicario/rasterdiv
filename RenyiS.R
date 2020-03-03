@@ -1,10 +1,10 @@
 RenyiS <- function(rasterm, w, alpha, base, debugging){
-  message("\n\nStarting Renyi index calculation with parameter value = ",alpha," \n\n\n\n\n")
+  #message("\n\nStarting Renyi index calculation with parameter value = ",alpha," \n\n\n\n\n")
   out<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   # Reshape values
   values<-as.numeric(as.factor(rasterm))
   rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
-  # Add fake columns and rows for moving window
+  # Add additional columns and rows for moving window
   hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
   ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
   trasterm<-cbind(ver,rbind(hor,rasterm_1,hor),ver)
@@ -20,14 +20,8 @@ RenyiS <- function(rasterm, w, alpha, base, debugging){
       }
       tw_labels <- names(tw)
       tw_values <- as.vector(tw)
-      #if clause to exclude windows with only 1 category
-      #if(length(tw_values) < 2) {
-      #  out[rw-w,cl-w]<-NA
-      #} else {
       p <- tw_values/sum(tw_values)
       out[rw-w,cl-w]<-1/(1-alpha) * drop(log(sum(p^alpha),base))
-      #}
-      #} 
     }
     svMisc::progress(value=cl, max.value=(c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2), progress.bar = FALSE)
   } # End of for loop 

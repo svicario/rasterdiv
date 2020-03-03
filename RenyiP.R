@@ -40,7 +40,7 @@ RenyiP<-function(rasterm, w, alpha, base, debugging){
       #}
     })
     return(RenyiOut)
-  } # End classic Renyi - parallelized
+  } # End Renyi - parallelized
   message(("\n\n Parallel calculation of Renyi's index complete.\n"))
   return(RenyiOP)
 }

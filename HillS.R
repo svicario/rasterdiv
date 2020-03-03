@@ -1,10 +1,10 @@
 HillS <- function(rasterm, w, alpha, debugging){
-  message("\nStarting Hill index calculation with parameter value = ",alpha," \n\n\n\n")
+  #message("\nStarting Hill index calculation with parameter value = ",alpha," \n\n\n\n")
   out<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   # Reshape values
   values<-as.numeric(as.factor(rasterm))
   rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
-  # Add fake columns and rows for moving window
+  # Add additional columns and rows for moving window
   hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
   ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
   trasterm<-cbind(ver,rbind(hor,rasterm_1,hor),ver)

@@ -1,4 +1,4 @@
-Hill <- function(input, window=3, BergerParker=FALSE, alpha=1, nc.cores=1, cluster.type="SOCK", debugging=FALSE, ...){
+Hill <- function(input, window=3, BergerParker=FALSE, alpha=1, n.process=1, cluster.type="SOCK", debugging=FALSE, ...){
   #
   ## Initial checks
   #
@@ -102,7 +102,7 @@ Hill <- function(input, window=3, BergerParker=FALSE, alpha=1, nc.cores=1, clust
     stop("The size of moving window must be an odd number. Exiting...")
   }
   
-  if (nc.cores == 1){
+  if (n.process == 1){
     if(mode == "single") {
       if( BergerParker ) {
         outS <- exp(BergerParkerS(rasterm, w, debugging))
@@ -157,7 +157,7 @@ Hill <- function(input, window=3, BergerParker=FALSE, alpha=1, nc.cores=1, clust
       return(out)
     }  
   }
-  if (nc.cores>1){
+  if (n.process>1){
     message("##################### Starting parallel calculation #######################")
     #       
     ## Export variables in the global environment
@@ -165,9 +165,9 @@ Hill <- function(input, window=3, BergerParker=FALSE, alpha=1, nc.cores=1, clust
     if(debugging){cat("#check: Hill parallel function.")}
     plr<<-TRUE
     if( cluster.type=="SOCK" || cluster.type=="FORK" ) {
-      cls <- parallel::makeCluster(nc.cores,type=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
+      cls <- parallel::makeCluster(n.process,type=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
     } else if( cluster.type=="MPI" ) {
-      cls <- makeMPIcluster(nc.cores,outfile="",useXDR=FALSE,methods=FALSE,output="")
+      cls <- makeMPIcluster(n.process,outfile="",useXDR=FALSE,methods=FALSE,output="")
     }
     registerDoSNOW(cls)
     clusterCall(cl=cls, function() library("parallel"))

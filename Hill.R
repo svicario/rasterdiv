@@ -1,4 +1,4 @@
-Hill <- function(input, window=3, mode ="single", BergerParker=FALSE, alpha=1, nc.cores=1, cluster.type="SOCK", debugging=FALSE, ...){
+Hill <- function(input, window=3, BergerParker=FALSE, alpha=1, nc.cores=1, cluster.type="SOCK", debugging=FALSE, ...){
   #
   ## Initial checks
   #
@@ -16,10 +16,9 @@ Hill <- function(input, window=3, mode ="single", BergerParker=FALSE, alpha=1, n
   if (!is.numeric(alpha)){
     stop("alpha must be a numeric vector. Exiting...")
   }
+  #Assign mode according to the length of alpha
+  if(length(alpha)==1) mode<-"single" else if(length(alpha)==2) mode<-"iterative" else if(length(alpha)>2) mode<-"sequential"
   if (mode=="single"){
-    if (length(alpha)!=1){
-      stop("In mode \"single\", alpha must be a numberic vector of length 1. Exiting...")
-    }
     if (alpha<0) {
       stop("alpha must be a non-negative number. Exiting...")
     }
@@ -31,14 +30,11 @@ Hill <- function(input, window=3, mode ="single", BergerParker=FALSE, alpha=1, n
     }
   }
   else if(mode == "iterative"){
-    if (length(alpha) != 2){
-      stop("In mode \"iterative\" alpha must be a numeric vector containing the start and the stop values. Exiting...")
+    if ( any(alpha < 0) ) {
+      stop("All alphas must be non-negative values. Exiting...")
     }
     start <- as.integer(alpha[1])
-    if (start<0){
-      stop("the starting value of alpha must be a non-negative number. Exiting...")
-    }
-    stop <- as.integer(alpha[2])
+    stop <- as.integer(alpha[length(alpha)])
     if (stop <= start){
       stop("The integer part of the starting value of alpha, must be strictly greater that the integer part of its stopping value. Exiting...")
     }
@@ -47,11 +43,11 @@ Hill <- function(input, window=3, mode ="single", BergerParker=FALSE, alpha=1, n
     }
   }
   else if(mode == "sequential"){
-    if ( length(alpha) < 2){
-      stop("In mode \"sequential\", alpha must be a numeric vector containing the start and the stop values. Exiting...")
-    }
     if ( any(alpha < 0) ) {
       stop("All alphas must be non-negative values. Exiting...")
+    }
+    else {
+      val <- unique(alpha)
     }
   }
   else{
@@ -66,7 +62,7 @@ Hill <- function(input, window=3, mode ="single", BergerParker=FALSE, alpha=1, n
       if( BergerParker ){
         message("Matrix check OK: \nBerger-Parker output matrix will be returned.")
       }else {
-        message("Matrix check OK: \nHill with parameter value=", alpha," output matrix will be returned.")
+        message("Matrix check OK: \nHill with alpha parameter value=", alpha," output matrix will be returned.")
       }
     }
     else if (mode == "iterative"){
@@ -120,7 +116,7 @@ Hill <- function(input, window=3, mode ="single", BergerParker=FALSE, alpha=1, n
     }
     else if(mode == "iterative"){
       out <- list()
-      for (ALPHA in start:stop){
+      for (ALPHA in alpha){
         if(ALPHA == 1) {
           s <- "ShannonAlpha 1"
           out[[s]] <- exp(ShannonS(rasterm, w, debugging))

@@ -35,7 +35,6 @@ PielouP<-function(rasterm, w, debugging){
       p <- tw_values/sum(tw_values)
       vv <- (-(sum(p*log(p)))/log((window^2)))
       return(vv)
-      #}
     })
     return(PielouOut)
   } # End Pielou - parallelized

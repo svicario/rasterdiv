@@ -28,14 +28,13 @@ ShannonP<-function(rasterm, w, debugging){
         tw<-tw[-length(tw)]
       }
       if( debugging ) {
-        message("Shannon- parallelized\nWorking on coords ",rw,",",cl,". classes length: ",length(tw),". window size=",window)
+        message("Shannon parallelized\nWorking on coords ",rw,",",cl,". classes length: ",length(tw),". window size=",window)
       }
       tw_labels <- names(tw)
       tw_values <- as.vector(tw)
       p <- tw_values/sum(tw_values)
       vv <- (-(sum(p*log(p))))
       return(vv)
-      #}
     })
     return(ShannonOut)
   } # End Shannon- parallelized

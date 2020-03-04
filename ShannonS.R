@@ -1,11 +1,11 @@
 ShannonS <- function(rasterm, w, debugging){
-  message("\nStarting Shannon-Wiener index calculation:\n")
+  #message("\nStarting Shannon-Wiener index calculation:\n")
   # Reshape values
   out<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   values<-as.numeric(as.factor(rasterm))
   rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   #
-  ## Add "fake" columns and rows for moving window
+  ## Add additional  columns and rows for moving window
   #
   hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
   ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
@@ -24,9 +24,7 @@ ShannonS <- function(rasterm, w, debugging){
       }
       tw_values<-as.vector(tw)
       p<-tw_values/sum(tw_values)
-      p_log<-log(p)
-      out[rw-w,cl-w]<-(-(sum(p*p_log)))
-      #}
+      out[rw-w,cl-w]<-(-(sum(p*log(p))))
     }   
     svMisc::progress(value=cl, max.value=(c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2), progress.bar = FALSE)
   } 

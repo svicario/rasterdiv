@@ -14,7 +14,6 @@ uno<-Hill(input=a,window=3,alpha=2)
 due<-Hill(input=b,window=3,alpha=2)
 tre<-Hill(input=a,window=3,alpha=2,n.process=2)
 quattro<-Hill(input=b,window=3,alpha=2,n.process=2)
-
 #Check whether output is identical
 identical(uno,due,tre,quattro)
 
@@ -23,13 +22,16 @@ uno<-Hill(input=a,window=3,alpha=1:5)
 due<-Hill(input=b,window=3,alpha=1:5)
 tre<-Hill(input=a,window=3,alpha=1:5,n.process=2)
 quattro<-Hill(input=b,window=3,alpha=1:5,n.process=2)
-
 #Check whether outputs are identical
 lapply(1:5, function(x) identical(uno[x][[1]],due[x][[1]],tre[x][[1]],quattro[x][[1]]))
 
 ##Rao
 uno<-Rao(a,distance_m="euclidean",window=3,shannon=FALSE,n.process=1,cluster.type="SOCK",na.tolerance=0)
 due<-Rao(b,distance_m="euclidean",window=3,shannon=FALSE,n.process=1,cluster.type="SOCK",na.tolerance=0)
+tre<-Rao(a,distance_m="euclidean",window=3,shannon=FALSE,n.process=2,cluster.type="SOCK",na.tolerance=0)
+quattro<-Rao(b,distance_m="euclidean",window=3,shannon=FALSE,n.process=2,cluster.type="SOCK",na.tolerance=0)
+#Check whether output is identical
+identical(uno[[1]],due[[1]],tre,quattro[[1]])
 
 ##Renyi
 #Mode single
@@ -47,3 +49,27 @@ tre<-Hill(input=a,window=3,alpha=0:5,n.process=2)
 quattro<-Hill(input=b,window=3,alpha=0:5,n.process=2)
 #Check whether output is identical
 lapply(1:5, function(x) identical(uno[x][[1]],due[x][[1]],tre[x][[1]],quattro[x][[1]]))
+
+##Shannon
+uno<-Shannon(input=a,window=3)
+due<-Shannon(input=b,window=3)
+tre<-Shannon(input=a,window=3,n.process=2)
+quattro<-Shannon(input=b,window=3,n.process=2)
+#Check whether output is identical
+identical(uno,due,tre,quattro)
+
+##Pielou
+uno<-Pielou(input=a,window=3)
+due<-Pielou(input=b,window=3)
+tre<-Pielou(input=a,window=3,n.process=2)
+quattro<-Pielou(input=b,window=3,n.process=2)
+#Check whether output is identical
+identical(uno,due,tre,quattro)
+
+##Berger-Parker
+uno<-BergerParker(input=a,window=3)
+due<-BergerParker(input=b,window=3)
+tre<-BergerParker(input=a,window=3,n.process=2)
+quattro<-BergerParker(input=b,window=3,n.process=2)
+#Check whether output is identical
+identical(uno,due,tre,quattro)

@@ -34,8 +34,7 @@ BergerParkerP<-function(rasterm, w, debugging){
       }
       tw_labels <- names(tw)
       tw_values <- as.vector(tw)
-      p <- max(tw_values/sum(tw_values))
-      vv <- (log(1/p))
+      vv <- max(tw_values/sum(tw_values))
     })
     return(BergerParkerOut)
   } # End Berger-Parker - parallelized

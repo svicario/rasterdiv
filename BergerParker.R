@@ -47,9 +47,6 @@ BergerParker <- function(input, window=3, n.process=1, cluster.type="MPI", debug
     }
     registerDoSNOW(cls)
     clusterCall(cl=cls, function() library("parallel"))
-    if(isfloat) {
-      parallel::clusterExport(cl=cls, varlist=c("mfactor"))
-    }
     on.exit(stopCluster(cls)) # Close the clusters on exit
     gc()
     outP <- do.call(cbind,BergerParkerP(rasterm, w,  debugging))

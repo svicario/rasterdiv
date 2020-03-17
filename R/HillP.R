@@ -37,10 +37,8 @@ HillP<-function(rasterm, w, alpha, debugging){
       p <- tw_values/sum(tw_values)
       vv <- drop(sum(p^alpha))^(1/(1-alpha))
       return(vv)
-      #}
     })
     return(HillOut)
-  } # End classic Hill - parallelized
-  message(("\n\n Parallel calculation of Hill's index complete.\n"))
+  }
   return(HillOP)
 }

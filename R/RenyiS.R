@@ -1,5 +1,5 @@
 RenyiS <- function(rasterm, w, alpha, base, debugging){
-  #message("\n\nStarting Renyi index calculation with parameter value = ",alpha," \n\n\n\n\n")
+
   out<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   # Reshape values
   values<-as.numeric(as.factor(rasterm))
@@ -23,7 +23,7 @@ RenyiS <- function(rasterm, w, alpha, base, debugging){
       p <- tw_values/sum(tw_values)
       out[rw-w,cl-w]<-1/(1-alpha) * drop(log(sum(p^alpha),base))
     }
-    svMisc::progress(value=cl, max.value=(c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2), progress.bar = FALSE)
-  } # End of for loop 
+    svMisc::progress(value=cl/(ncol(trasterm)-1)*100, max.value=100, progress.bar = F,init=T)
+  }
   return(out)
 }

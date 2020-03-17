@@ -1,30 +1,5 @@
-######### RAO's Entropy ############################
-## Developed by Matteo Marcantonio
-## Latest update: 18th March 2019
-## -------------------------------------------------
-## Code to calculate Rao's quadratic entropy on a
-## numeric matrix, RasterLayer object (or lists)
-## using a moving window algorithm. 
-## The function also calculates Shannon-Wiener index.
-## -------------------------------------------------
-## Rao's Q Min = 0, if all pixel classes have
-## distance 0. If the chosen distance ranges between
-## 0 and 1, Rao's Max = 1-1/S (Simpson Diversity,
-## where S is the number of pixel classes).
-## -------------------------------------------------
-## Find more info and applications here: 
-## 1) https://doi.org/10.1016/j.ecolind.2016.07.039 
-## 2) https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12941
-####################################################
-# Function
-Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic", lambda=0, shannon=FALSE, rescale=FALSE, na.tolerance=0.0, simplify=3, n.process=1, cluster.type="MPI", debugging=FALSE, ...)
+Rao <- function(x, dist_m="euclidean", window=9, mode="classic", lambda=0, shannon=FALSE, rescale=FALSE, na.tolerance=0.0, simplify=3, n.processes=1, cluster.type="SOCK", debugging=FALSE)
 {
-#
-## Load required packages
-#
-    require(raster)
-    require(svMisc)
-    require(proxy)
 #
 ## Define function to check if a number is an integer
 #
@@ -32,35 +7,41 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
 #
 ## Initial checks
 #
-    if( !(is(input,"matrix") | is(input,"SpatialGridDataFrame") | is(input,"RasterLayer") | is(input,"list")) ) {
-        stop("\nNot a valid input object.")
+    if( !(is(x,"matrix") | is(x,"SpatialGridDataFrame") | is(x,"RasterLayer") | is(x,"list")) ) {
+        stop("\nNot a valid x object.")
     }
-    if( is(input,"SpatialGridDataFrame") ) {
-        input <- raster(input) # Change input matrix/ces names
+    if (mode=="multidimension" & length(x)<2){
+        stop("x must be a list of length > 1. Exiting...")
     }
-    if( is(input,"matrix") | is(input,"RasterLayer")) {
-        rasterm<-input
-    } else if( is(input,"list") ) {
-        rasterm<-input[[1]]
+
+    if( is(x,"SpatialGridDataFrame") ) {
+        x <- raster(x) # Change x matrix/ces names
     }
-    if(na.tolerance>1){
+    else if( is(x,"matrix") | is(x,"RasterLayer")) {
+        rasterm<-x
+    } 
+    else if( is(x,"list") ) {
+        rasterm<-x[[1]]
+    }
+    if(na.tolerance>1.0 | na.tolerance<0.0){
         stop("na.tolerance must be in the [0-1] interval. Exiting...")
     }
+
 # Deal with matrices and RasterLayer in a different way
 # If data are raster layers
-    if( is(input[[1]],"RasterLayer") ) {
+    if( is(x[[1]],"RasterLayer") ) {
         if( mode=="classic" ){
             isfloat<-FALSE # If data are float numbers, transform them in integer, this may allow for a shorter computation time on big datasets.
             if( !is.wholenumber(rasterm@data@min) | !is.wholenumber(rasterm@data@max) | is.infinite(rasterm@data@min) | !is.wholenumber(median(getValues(rasterm),na.rm=T)) ){
-                message("Converting input data in an integer matrix...")
+                message("Converting x data in an integer matrix...")
                 isfloat<-TRUE
                 mfactor<-100^simplify
                 rasterm<-getValues(rasterm)*mfactor
                 rasterm<-as.integer(rasterm)
-                rasterm<-matrix(rasterm,nrow(input),ncol(input),byrow=TRUE)
+                rasterm<-matrix(rasterm,nrow(x),ncol(x),byrow=TRUE)
                 gc()
             }else{
-                rasterm<-matrix(getValues(rasterm),ncol=ncol(input),nrow=nrow(input),byrow=TRUE)
+                rasterm<-matrix(getValues(rasterm),ncol=ncol(x),nrow=nrow(x),byrow=TRUE)
             }
         }
         #Print user messages
@@ -73,18 +54,18 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
         }else if( mode=="multidimension" & shannon ){
             stop("Matrix check failed: \nMultidimension and Shannon not compatible, set shannon=FALSE")
         }else{
-            stop("Matrix check failed: \nNot a valid input | method | distance, please check all these options...")
+            stop("Matrix check failed: \nNot a valid x | method | distance, please check all these options...")
         }
 # If data are a matrix or a list
-    }else if( is(input,"matrix") | is(input,"list") ) {
+    }else if( is(x,"matrix") | is(x,"list") ) {
         if( mode=="classic" ){ 
             isfloat<-FALSE # If data are float numbers, transform them in integer
             if( !is.integer(rasterm) ){
-                message("Converting input data in an integer matrix...")
+                message("Converting x data in an integer matrix...")
                 isfloat<-TRUE
                 mfactor<-100^simplify
                 rasterm<-as.integer(rasterm*mfactor)
-                rasterm<-matrix(rasterm,nrow(input),ncol(input),byrow=TRUE)
+                rasterm<-matrix(rasterm,nrow(x),ncol(x),byrow=TRUE)
                 gc()
             }else{
                 rasterm<-as.matrix(rasterm)
@@ -99,15 +80,15 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
         }else if( mode=="multidimension" & !shannon ){
             message(("Matrix check OK: \nA matrix with multimension RaoQ will be returned"))
         }else{
-            stop("Matrix check failed: \nNot a valid input | method | distance, please check all these options")
+            stop("Matrix check failed: \nNot a valid x | method | distance, please check all these options")
         }
     }
 
-    if(n.process>1) {
+    if(n.processes>1) {
         if(mode=="multidimension"){
             message(
                 "Multi-core is not supported for multidimensional Rao, proceeding with 1 core...")
-            n.process=1
+            n.processes=1
         }else{
             message("
 ##################### Starting parallel calculation #######################")
@@ -124,7 +105,7 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
 #
 ## Preparation of output matrices
 #
-    if(n.process==1) {
+    if(n.processes==1) {
         raoqe<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
     }
     if(shannon){
@@ -137,16 +118,7 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
 #
 # If classic RaoQ is parallelized
 #
-        if(n.process>1) {
-#
-## Required packages for parallel calculation
-#
-            require(foreach)
-            require(doSNOW)
-            require(parallel)
-            if( cluster.type=="MPI" ){
-                require(Rmpi)
-            }
+        if(n.processes>1) {
 #
 ## Reshape values
 #
@@ -163,28 +135,27 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
 #       
 ## Derive distance matrix
 #
-            if( is.character( distance_m) | is.function(distance_m) ) {
-                d1<-proxy::dist(as.numeric(levels(as.factor(rasterm))),method=distance_m)
-            } else if( is.matrix(distance_m) | is.data.frame(distance_m) ) {
-                d1<-stats::as.dist(xtabs(distance_m[, 3] ~ distance_m[, 2] + distance_m[, 1]))
+            if( is.character( dist_m) | is.function(dist_m) ) {
+                d1<-proxy::dist(as.numeric(levels(as.factor(rasterm))),method=dist_m)
+            } else if( is.matrix(dist_m) | is.data.frame(dist_m) ) {
+                d1<-stats::as.dist(xtabs(dist_m[, 3] ~ dist_m[, 2] + dist_m[, 1]))
             }
 #
 ## Export variables in the global environment
 #
-            if(isfloat) {
-                sapply(c("mfactor"), function(x) {assign(x,get(x),envir= .GlobalEnv)})
-            }
+            #if(isfloat) {
+            #    sapply(c("mfactor"), function(x) {assign(x,get(x),envir= .GlobalEnv)})
+            #}
 #       
 ## Create cluster object with given number of slaves
 #
-            plr<<-TRUE
             if( cluster.type=="SOCK" || cluster.type=="FORK" ) {
-                cls <- parallel::makeCluster(n.process,type=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
+                cls <- parallel::makeCluster(n.processes,type=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
             } else if( cluster.type=="MPI" ) {
-                cls <- makeCluster(n.process,outfile="",useXDR=FALSE,methods=FALSE,output="")
+                cls <- makeCluster(n.processes,outfile="",useXDR=FALSE,methods=FALSE,output="")
             }
             registerDoSNOW(cls)
-            clusterCall(cl=cls, function() library("parallel"))
+            # clusterCall(cl=cls, function() library("parallel"))
             if(isfloat) {
                 parallel::clusterExport(cl=cls, varlist=c("mfactor"))
             }
@@ -236,20 +207,20 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
 #
 ## If classic RaoQ is sequential
 #
-        } else if(n.process==1) {
+        } else if(n.processes==1) {
 # Reshape values
             values<-as.numeric(as.factor(rasterm))
             rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
-# Add fake columns and rows for moving window
+# Add additional columns and rows for moving window
             hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
             ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
             trasterm<-cbind(ver,rbind(hor,rasterm_1,hor),ver)
 # Derive distance matrix
             classes<-levels(as.factor(rasterm))
-            if( is.character(distance_m) | is.function(distance_m) ) {
-                d1<-proxy::dist(as.numeric(classes),method=distance_m)
-            } else if( is.matrix(distance_m) | is.data.frame(distance_m) ) {
-                d1<-stats::as.dist(xtabs(distance_m[, 3] ~ distance_m[, 2] + distance_m[, 1]))
+            if( is.character(dist_m) | is.function(dist_m) ) {
+                d1<-proxy::dist(as.numeric(classes),method=dist_m)
+            } else if( is.matrix(dist_m) | is.data.frame(dist_m) ) {
+                d1<-stats::as.dist(xtabs(dist_m[, 3] ~ dist_m[, 2] + dist_m[, 1]))
             }
 # Loop over each pixel
             for (cl in (1+w):(dim(rasterm)[2]+w)) {
@@ -281,7 +252,7 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
                             }
                         }
                     } 
-                    progress(value=cl, max.value=c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2, progress.bar = FALSE)
+                    svMisc::progress(value=cl/(ncol(trasterm)-1)*100, max.value=100, progress.bar = F,init=T)
                 } 
             } # End of for loop 
             message(("\nCalculation of Rao's index complete.\n"))
@@ -297,17 +268,17 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
 #
 # Check if there are NAs in the matrices
         if ( is(rasterm,"RasterLayer") ){
-            if(any(sapply(lapply(unlist(input),length),is.na)==TRUE))
-                message("\n Warning: One or more RasterLayers contain NA which will be threated as 0")
+            if(any(sapply(lapply(unlist(x),length),is.na)==TRUE))
+                message("\n Warning: One or more RasterLayers contain NA's which will be treated as 0")
         } else if ( is(rasterm,"matrix") ){
-            if(any(sapply(input, is.na)==TRUE) ) {
-                message("\n Warning: One or more matrices contain NA which will be threated as 0")
+            if(any(sapply(x, is.na)==TRUE) ) {
+                message("\n Warning: One or more matrices contain NA's which will be treated as 0")
             }
         }
 #
 ## Check whether the chosen distance metric is valid or not
 #
-        if( distance_m=="euclidean" | distance_m=="manhattan" | distance_m=="canberra" | distance_m=="minkowski" | distance_m=="mahalanobis" ) {
+        if( dist_m=="euclidean" | dist_m=="manhattan" | dist_m=="canberra" | dist_m=="minkowski" | dist_m=="mahalanobis" ) {
 #
 ## Define distance functions
 #
@@ -361,38 +332,42 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
 #
 ## Decide what function to use
 #
-            if( distance_m=="euclidean") {
+            if( dist_m=="euclidean") {
                 distancef <- get("multieuclidean")
-            } else if( distance_m=="manhattan" ) {
+            } else if( dist_m=="manhattan" ) {
                 distancef <- get("multimanhattan")
-            } else if( distance_m=="canberra" ) {
+            } else if( dist_m=="canberra" ) {
                 distancef <- get("multicanberra")
-            } else if( distance_m=="minkowski" ) {
+            } else if( dist_m=="minkowski" ) {
                 if( lambda==0 ) {
                     stop("The Minkowski Distance for lambda = 0 is Infinity; please choose another value for lambda.")
                 } else {
                     distancef <- get("multiminkowski") 
                 }
-            } else if( distance_m=="mahalanobis" ) {
+            } else if( dist_m=="mahalanobis" ) {
                 distancef <- get("multimahalanobis")
                 warning("Multimahalanobis distance is not fully supported...")
             }
         } else {
             stop("Distance function not defined for multidimensional Rao's Q; please choose among euclidean, manhattan, canberra, minkowski, mahalanobis!")
         }
+        if(debugging) {
+            message("#check: After distance calculation in multimenional clause.")
+            print(distancef)
+        }
 #
 ## Reshape values
 #
-        vls<-lapply(input, function(x) {raster::as.matrix(x)})
+        vls<-lapply(x, function(x) {raster::as.matrix(x)})
 #
-## Rescale and add fake columns and rows for moving w
+## Rescale and add additional columns and rows for moving w
 #
         hor<-matrix(NA,ncol=dim(vls[[1]])[2],nrow=w)
         ver<-matrix(NA,ncol=w,nrow=dim(vls[[1]])[1]+w*2)
         if(rescale) {
             trastersm<-lapply(vls, function(x) {
                 t1 <- raster::scale(raster(cbind(ver,rbind(hor,x,hor),ver)))
-                t2 <- as.matrix(t1)
+                t2 <- raster::as.matrix(t1)
                 return(t2)
             })
         } else {
@@ -400,11 +375,15 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
                 cbind(ver,rbind(hor,x,hor),ver)
             })
         }
+        if(debugging) {
+            message("#check: After rescaling in multimensional clause.")
+            print(distancef)
+        }
 #
 ## Loop over all the pixels in the matrices
 #
         if( (ncol(vls[[1]])*nrow(vls[[1]]))> 10000) {
-            message("\n Warning: ",ncol(vls[[1]])*nrow(vls[[1]])*length(vls), " cells to be processed, may take some time... \n")
+            message("\n Warning: ",ncol(vls[[1]])*nrow(vls[[1]])*length(vls), " cells to be processed, it may take some time... \n")
         }
         for (cl in (1+w):(dim(vls[[1]])[2]+w)) {
             for(rw in (1+w):(dim(vls[[1]])[1]+w)) {
@@ -431,10 +410,10 @@ Rao <- function(input, distance_m="euclidean", p=NULL, window=9, mode="classic",
             progress(value=cl, max.value=dim(rasterm)[2]+w, progress.bar = FALSE)
         }
         if(exists("pb")) {
-         close(pb) 
-         message("\nCalculation of Multidimensional Rao's index complete.\n")
-     }
- } else{
+           close(pb) 
+           message("\nCalculation of Multidimensional Rao's index complete.\n")
+       }
+   } else{
     message("Something went wrong when trying to calculate Rao's indiex.")
 }  # end of multimensional RaoQ
 
@@ -487,34 +466,34 @@ if(debugging){
 }
 
 if( shannon ) {
-    if( n.process>1 ) {
+    if( n.processes>1 ) {
         outl<-list(do.call(cbind,raop),shannond)
         names(outl)<-c("Rao","Shannon")
         return(outl)
-    } else if( n.process==1 ){ 
+    } else if( n.processes==1 ){ 
         outl<-list(raoqe,shannond)
         names(outl)<-c("Rao","Shannon")
         return(outl)
     }
 } else if( !shannon & mode=="classic" ) {
-    if( isfloat & n.process>1 ) {
+    if( isfloat & n.processes>1 ) {
         return(do.call(cbind,raop)/mfactor)
         if(debugging){
             message("#check: return function - classic.")
         }
-    } else if( !isfloat & n.process>1 ) {
+    } else if( !isfloat & n.processes>1 ) {
         outl<-list(do.call(cbind,raop))
         names(outl)<-c("Rao")
         return(outl)
-    } else if( isfloat & n.process==1 ) {
+    } else if( isfloat & n.processes==1 ) {
         outl<-list(raoqe)
         names(outl)<-c("Rao")
         return(outl)    
-    } else if( !isfloat & n.process==1 ) {
+    } else if( !isfloat & n.processes==1 ) {
         outl<-list(raoqe)
         names(outl)<-c("Rao")
         return(outl)    
-    } else if( !isfloat & n.process>1 ) {
+    } else if( !isfloat & n.processes>1 ) {
         outl<-list(do.call(cbind,raoqe))
         names(outl)<-c("Rao")
         return(outl)

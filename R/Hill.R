@@ -1,0 +1,150 @@
+Hill <- function(x, window=3, alpha=1, n.processes=1, cluster.type="SOCK", debugging=FALSE) {
+
+  # Initial checks
+  if( !((is(x,"matrix") | is(x,"SpatialGridDataFrame") | is(x,"RasterLayer") | is(x,"list"))) ) {
+    stop("\nNot a valid x object. Exiting...")
+  }
+  else if( is(x,"matrix") ) {
+    rasterm <- x
+  }
+  else if( is(x,"SpatialGridDataFrame") ) {
+    rasterm <- raster(x)
+  }
+  else if( is(x,"RasterLayer")) {
+    rasterm <- matrix(getValues(x), ncol = ncol(x), nrow = nrow(x), byrow=TRUE)
+  } 
+  else if( is(x,"list") ) {
+    message("x is a list, only first element will be taken.")
+    if( !((is(x[[1]],"matrix") | is(x[[1]],"SpatialGridDataFrame") | is(x[[1]],"RasterLayer"))) ) {
+      stop("The first element of list x is not a valid object. Exiting...")
+    }
+    rasterm<-x[[1]]
+    if( is(rasterm,"RasterLayer") ) {
+      rasterm <- matrix(getValues(rasterm), ncol = ncol(rasterm), nrow = nrow(rasterm), byrow=TRUE)
+    }
+  }
+  if ( any(!is.numeric(alpha)) ){
+    stop("alpha must be a numeric vector. Exiting...")
+  }
+  if ( any(alpha<0) ){
+    stop("alpha must be only positive numbers. Exiting...")
+  }
+
+  # Assign mode according to the length of alpha
+  if(length(alpha)==1) mode <- "single" else if(length(alpha)>1) mode <- "iterative"
+  # One single alpha
+  if (mode=="single"){
+    # If alpha is ~1 then Shannon is calculated
+    if (abs(alpha-1)<.Machine$double.eps) {
+      Shannon <- TRUE
+    } else{
+      Shannon <- FALSE
+    }
+    # If alpha approaches positive infinity then Berger-Parker is calculated
+    if ( alpha >= .Machine$integer.max ) {
+      BergerParker <- TRUE
+    } else {
+      BergerParker <- FALSE
+    }
+  }
+  
+  # Print messages about output
+  message(paste(c("\nObject x check OK: \nHill with alpha parameter value in ", alpha," will be returned."),collapse=" "))
+  # Derive operational moving window
+  if( window%%2==1 ){
+    w <- (window-1)/2
+  } else {
+    stop("The size of the moving window must be an odd number. Exiting...")
+  }
+  
+  # If one single process
+  if (n.processes == 1){
+    if(mode == "single") {
+      if( BergerParker ) {
+        outS <- 1/BergerParkerS(rasterm, w, debugging)
+      }
+      else if( Shannon ) {
+        outS <- exp(ShannonS(rasterm, w, debugging))
+      }
+      else{
+        outS<- HillS(rasterm, w, alpha, debugging)
+      }
+      message(("\nCalculation complete.\n"))
+      return(outS)
+    }
+    else if(mode == "iterative"){
+      out <- list()
+      for (ALPHA in alpha){
+        message("\n\nProcessing alpha ",ALPHA)
+        if((abs(ALPHA-1)<.Machine$double.eps)) {
+          s <- "Shannon_Hill_alpha_1"
+          out[[s]] <- exp(ShannonS(rasterm, w, debugging))
+        }
+        else if (ALPHA >= .Machine$integer.max) {
+          s <- "Berger-Parker"
+          out[[s]] <- 1/BergerParkerS(rasterm, w, debugging)
+        }
+        else{
+          s<-paste("Hill_alpha_",as.character(ALPHA),sep="")
+          out[[s]] <- HillS(rasterm, w, ALPHA, debugging)
+        }
+      }
+      message(("\n\nCalculation complete.\n"))
+      return(out)
+    }
+  } 
+  else if (n.processes>1){
+    # If more than 1 process
+    message("\n##################### Starting parallel calculation #######################")     
+    # Opening the cluster
+    if(debugging){cat("#check: Before parallel function.")}
+    if( cluster.type=="SOCK" || cluster.type=="FORK" ) {
+      cls <- parallel::makeCluster(n.processes,type=cluster.type, outfile="",useXDR=FALSE,methods=FALSE,output="")
+    } 
+    else if( cluster.type=="MPI" ) {
+      cls <- snow::makeMPIcluster(n.processes,outfile="",useXDR=FALSE,methods=FALSE,output="")
+    } 
+    else {
+      message("Wrong definition for cluster.type. Exiting...")
+    }
+    doSNOW::registerDoSNOW(cls)
+    # Close clusters on exit
+    on.exit(snow::stopCluster(cls))
+    # Garbage collection
+    gc()
+    if(mode == "single") {
+      if( BergerParker ){
+        outP <- BergerParkerP(rasterm, w, debugging)
+      }
+      else if( Shannon ){
+        outP <- exp(ShannonP(rasterm, w, debugging))
+      }
+      else{
+        outP <- HillP(rasterm, w, alpha, debugging)
+      }
+      return(do.call(cbind,outP))
+    }
+    else if(mode == "iterative"){
+      outP <- list()
+      for (ALPHA in alpha){
+        if( (abs(ALPHA-1)<.Machine$double.eps) ) {
+          s <- "Shannon_Hill_alpha_1"
+          out <- ShannonP(rasterm, w, debugging)
+          outP[[s]] <- exp(do.call(cbind,out))
+        } 
+        else if ( ALPHA >= .Machine$integer.max ){
+          s <- "Berger-Parker"
+          out <- BergerParkerP(rasterm, w, debugging)
+          outP[[s]] <- do.call(cbind,out)
+        }
+        else{
+          s <- paste("Hill_alpha_",as.character(ALPHA),sep="")
+          out <- HillP(rasterm, w, ALPHA, debugging)
+          outP[[s]] <- do.call(cbind,out)
+        }
+      }
+      return(outP)
+      message("\nCalculation complete.\n")
+    }
+  }
+}

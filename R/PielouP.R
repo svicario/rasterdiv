@@ -14,15 +14,12 @@ PielouP<-function(rasterm, w, debugging){
   #
   ## Progression bar
   #
-  pb <- txtProgressBar(min = (1+w), max = dim(rasterm)[2], style = 3)
+  pb <- txtProgressBar(min = (1+w), max = ncol(rasterm), style = 3)
   progress <- function(n) setTxtProgressBar(pb, n)
   opts <- list(progress = progress)
-  window <- 2*w + 1
-  PielouOP <- foreach(cl=(1+w):(dim(rasterm)[2]+w),.options.snow = opts,.verbose = F) %dopar% {
-    if(debugging) {
-      cat(paste(cl))
-    }
-    PielouOut <- sapply((1+w):(dim(rasterm)[1]+w), function(rw) {
+  
+  PielouOP <- foreach(cl=(1+w):(ncol(rasterm)+w),.options.snow = opts,.verbose = F) %dopar% {
+    PielouOut <- sapply((1+w):(ncol(rasterm)+w), function(rw) {
       tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]),maxsum=10000)
       if( "NA's"%in%names(tw) ) {
         tw<-tw[-length(tw)]
@@ -32,12 +29,12 @@ PielouP<-function(rasterm, w, debugging){
       }
       tw_labels <- names(tw)
       tw_values <- as.vector(tw)
+      maxS <- log(length(tw_labels))
       p <- tw_values/sum(tw_values)
-      vv <- (-(sum(p*log(p)))/log((window^2)))
+      vv <- (-(sum(p*log(p)))/maxS)
       return(vv)
     })
     return(PielouOut)
-  } # End Pielou - parallelized
-  message(("\n\n Parallel calculation of Pielou's index complete.\n"))
+  }
   return(PielouOP)
 }

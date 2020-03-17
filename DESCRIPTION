@@ -1,13 +1,13 @@
 Package: rasterdiv
-Type: Package
-Title: 
-Version: 1.0
+Version: 0.1-0
 Date: 2020-01-27
-Authors@R: c(person("Nome","cognome",email="....",role=c("aut","cre")),person("Nome","Cognome",role="aut"),person("Nome","Cognome",role="ctb"),....)
-Description: 
-Depends: R (>= 3.5.0)
-Imports: raster,svMisc,parallel,stats,snow,utils,doSNOW,proxy 
-Suggests: Rmpi,sp 
+Title: Diversity indeces for numerical matrices
+Author: Martina Iannacito <martina.iannacito@inria.fr >, Matteo Marcantonio <marcantoniomatteo@gmail.com>, Elisa Thouverai <elisa.th95@gmail.com>, Clara Tattoni <clara.tattoni@gmail.com>, Daniele Da Re <daniele.dare@uclouvain.be>, Duccio Rocchini <duccio.rocchini@unibo.it>
+Maintainer: Matteo Marcantonio <marcantoniomatteo@gmail.com>
+Depends: R (>= 3.6.0)
+Imports: raster, parallel, snow, doSNOW, methods, foreach, proxy, svMisc
+Suggests: Rmpi, sp
+LazyData: TRUE
+Description: This package provides functions to calculate indices of diversity on numerical matrices based on Information Theory.
 License: GPL(>=2)
 Encoding: UTF-8
-

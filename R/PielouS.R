@@ -1,7 +1,7 @@
-BergerParkerS <- function(rasterm, w,  debugging){
-  out<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
-  #message("\nStarting Berger-Parker index calculation:\n")
+PielouS <- function(rasterm, w, debugging){
+  #message("\nStarting Pielou's index calculation:\n")
   # Reshape values
+  out<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   values<-as.numeric(as.factor(rasterm))
   rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   #
@@ -13,6 +13,7 @@ BergerParkerS <- function(rasterm, w,  debugging){
   #
   ## Loop over all the pixels
   #
+  window <- 2*w + 1
   for (cl in (1+w):(dim(rasterm)[2]+w)) {
     for(rw in (1+w):(dim(rasterm)[1]+w)) {
       tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]))
@@ -20,12 +21,16 @@ BergerParkerS <- function(rasterm, w,  debugging){
         tw<-tw[-length(tw)]
       }
       if(debugging) {
-        message("Berger-Parker\nWorking on coords ",rw ,",",cl,". classes length: ",length(tw),". window size=",2*w+1)
+        message("Pielou\nWorking on coords ",rw ,",",cl,". classes length: ",length(tw),". window size=",2*w+1)
       }
       tw_values<-as.vector(tw)
-      out[rw-w,cl-w]<-max(tw_values/sum(tw_values))
-    }   
-    svMisc::progress(value=cl, max.value=(c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2), progress.bar = FALSE)
+      maxS<-log(length(tw))
+      p<-tw_values/sum(tw_values)
+      p_log<-log(p)
+      out[rw-w,cl-w]<-(-(sum(p*p_log)))/maxS
+    }
+    svMisc::progress(value=cl/(ncol(trasterm)-1)*100, max.value=100, progress.bar = F,init=T)
   } 
+  
   return(out)
 }

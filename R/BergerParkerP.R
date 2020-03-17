@@ -1,4 +1,4 @@
-RenyiP<-function(rasterm, w, alpha, base, debugging){
+BergerParkerP<-function(rasterm, w, debugging){
   #
   ## Reshape values
   #
@@ -20,27 +20,23 @@ RenyiP<-function(rasterm, w, alpha, base, debugging){
   #
   ## Start the parallelized loop over iter
   #
-  RenyiOP <- foreach(cl=(1+w):(dim(rasterm)[2]+w),.options.snow = opts,.verbose = F) %dopar% {
+  BergerParkerOP <- foreach(cl=(1+w):(dim(rasterm)[2]+w),.options.snow = opts,.verbose = F) %dopar% {
     if(debugging) {
       cat(paste(cl))
     }
-    RenyiOut <- sapply((1+w):(dim(rasterm)[1]+w), function(rw) {
+    BergerParkerOut <- sapply((1+w):(dim(rasterm)[1]+w), function(rw) {
       tw<-summary(as.factor(trasterm[c(rw-w):c(rw+w),c(cl-w):c(cl+w)]),maxsum=10000)
       if( "NA's"%in%names(tw) ) {
         tw<-tw[-length(tw)]
       }
       if( debugging ) {
-        message("Renyi - parallelized\nWorking on coords ",rw,",",cl,". classes length: ",length(tw),". window size=", window)
+        message("Berger-Parker - parallelized\nWorking on coords ",rw,",",cl,". classes length: ",length(tw),". window size=", window)
       }
       tw_labels <- names(tw)
       tw_values <- as.vector(tw)
-      p <- tw_values/sum(tw_values)
-      vv <- 1/(1-alpha) * drop(log(sum(p^alpha),base))
-      return(vv)
-      #}
+      vv <- max(tw_values/sum(tw_values))
     })
-    return(RenyiOut)
-  } # End Renyi - parallelized
-  message(("\n\n Parallel calculation of Renyi's index complete.\n"))
-  return(RenyiOP)
+    return(BergerParkerOut)
+  } # End Berger-Parker - parallelized
+  return(BergerParkerOP)
 }

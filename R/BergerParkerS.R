@@ -1,11 +1,11 @@
-ShannonS <- function(rasterm, w, debugging){
-  #message("\nStarting Shannon-Wiener index calculation:\n")
+BergerParkerS <- function(rasterm, w,  debugging){
+  
   # Reshape values
   out<-matrix(rep(NA,dim(rasterm)[1]*dim(rasterm)[2]),nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   values<-as.numeric(as.factor(rasterm))
   rasterm_1<-matrix(data=values,nrow=dim(rasterm)[1],ncol=dim(rasterm)[2])
   #
-  ## Add additional  columns and rows for moving window
+  ## Add additional columns and rows for moving window
   #
   hor<-matrix(NA,ncol=dim(rasterm)[2],nrow=w)
   ver<-matrix(NA,ncol=w,nrow=dim(rasterm)[1]+w*2)
@@ -20,14 +20,12 @@ ShannonS <- function(rasterm, w, debugging){
         tw<-tw[-length(tw)]
       }
       if(debugging) {
-        message("Shannon-Wiener\nWorking on coords ",rw ,",",cl,". classes length: ",length(tw),". window size=",2*w+1)
+        message("Berger-Parker\nWorking on coords ",rw ,",",cl,". classes length: ",length(tw),". window size=",2*w+1)
       }
       tw_values<-as.vector(tw)
-      p<-tw_values/sum(tw_values)
-      out[rw-w,cl-w]<-(-(sum(p*log(p))))
+      out[rw-w,cl-w]<-max(tw_values/sum(tw_values))
     }   
-    svMisc::progress(value=cl, max.value=(c((dim(rasterm)[2]+w)+(dim(rasterm)[1]+w))/2), progress.bar = FALSE)
+    svMisc::progress(value=cl/(ncol(trasterm)-1)*100, max.value=100, progress.bar = F,init=T)
   } 
-  
   return(out)
 }

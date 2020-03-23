@@ -18,6 +18,7 @@ importFrom("svMisc", "progress")
 #####################################
 export(Hill, HillS, HillP)
 export(Rao)
+export(CRE)
 export(Renyi, RenyiS, RenyiP)
 export(Shannon, ShannonS, ShannonP)
 export(Pielou, PielouS, PielouP)

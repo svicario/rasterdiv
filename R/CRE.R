@@ -594,7 +594,7 @@ CRE_<-function(B,base=exp(1))
 	#Cumulative Residual Entropy
 	P=Prob(B)
 	Pcre=CumRes(P)
-	-sum(Pcre*log(Pcre,base)*Deltas(Pcre), na.rm=TRUE)
+	-sum(Pcre*log(Pcre,base)*Deltas(P), na.rm=TRUE)
 }
 
 Prob<-function(C)
@@ -605,15 +605,15 @@ Prob<-function(C)
 	table(C)/L
 }
 
-Deltas<-function(P)
+Deltas<-function(P, first=0)
 {
 	#Difference among values of a table.
 	#For multidimensional table the product is given 
 	if ((length(dim(P)))==1){
-	delta=c(0,diff(as.numeric(names(P))))} else {
+	delta=c(first,diff(as.numeric(names(P))))} else {
 	delta=1
 	for (dim in dimnames(P)){
-		delta=outer(delta,c(0,diff(as.numeric(dim))))
+		delta=outer(delta,c(first,diff(as.numeric(dim))))
 	}
 	}
 	drop(delta)

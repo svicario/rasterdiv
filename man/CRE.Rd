@@ -1,8 +1,8 @@
-\name{Rao}
-\alias{Rao}
-\title{Rao's index of quadrtic entropy (Q)}
+\name{CRE}
+\alias{CRE}
+\title{Cumulative Residual Entropy  (CRE)}
 \description{
-Computes Rao's index of quadratic entropy (Q) on different classes of numeric matrices using a moving window algorithm.
+Computes Cumulative Residual Entropy  (CRE) on different classes of numeric matrices using a moving window algorithm.
 }
 \usage{
 CRE(x, window=9, mode="classic",  
@@ -15,21 +15,21 @@ n.processes=1, cluster.type="SOCK", debugging=FALSE)
   \item{mode}{currently, there are two modes to calculate Cumulative Residual Entropy (CRE). If mode is "classic", then the monodimension CRE will be calculated on one single matrix. If mode is "multidimension" (experimental!) a list of matrices must be provided as input. In this latter case, the multidimensional cumulative residual probability will be calculated . Default value is "classic"}
     \item{shannon}{a boolean variable set to FALSE by default. If TRUE, a matrix with Shannon index will be also calculated.  Default value is FALSE.}
   \item{rescale}{a boolean variable set to FALSE by default. If TRUE, \emph{x} will be scaled and centered to standardise different matrices if mode is "multidimension". Default value is FALSE.}
-  \item{na.tolerance}{a numeric value \eqn{(0.0-1.0)} which indicates the proportion of NA values that will be tolerated to calculate Rao's index in each moving window over \emph{x}. If the relative proportion of NA's in a moving window is bigger than na.tolerance, then the value of the window will be set as NA, otherwise Rao's index will be calculated considering the non-NA values. Default values is 0.0 (i.e., no tolerance for NA's).}
-  \item{simplify}{Number of decimal places to be retained to calculate distances in Rao's index. Only if \emph{x} is floats.}
+  \item{na.tolerance}{a numeric value \eqn{(0.0-1.0)} which indicates the proportion of NA values that will be tolerated to calculate CRE in each moving window over \emph{x}. If the relative proportion of NA's in a moving window is bigger than na.tolerance, then the value of the window will be set as NA, otherwise CRE will be calculated considering the non-NA values. Default values is 0.0 (i.e., no tolerance for NA's).}
+  \item{simplify}{Number of decimal places to be retained to calculate CRE. Only if \emph{x} is floats.}
   \item{n.processes}{the number of processes (cores) which will be spawned. Default value is 1.}
   \item{cluster.type}{the type of cluster which will be created. The options are \emph{"MPI"} (which calls "makeMPIcluster"), \emph{"FORK"} and \emph{"SOCK"} (which call "makeCluster"). Default type is \emph{"SOCK"}.}
   \item{debugging}{a boolean variable set to FALSE by default. If TRUE, additional messages will be printed. For debugging only.}
   }
 \details{
-Classical Rao's Index (\eqn{Q}) is calculated on a numerical matrix as \eqn{Q = \sum_{i=1}^{R}{\sum_{j=1}^{R}{d_{i,j}\times{p_i}\times{p_j}}}} [1]. Where R is the number of categories, whereas \emph{i} and \emph{j} are pair of numerical categories in the same moving window. In the "multidimension" Rao's index, distances among categories are calculated considering more than one layer, then the pairwise distance between each pair of numerical categories is multiplied to the square of the size of the moving window (which is somewhat the same as to calculate the variance of the multidimensional distance [2].). \cr
-The theoretical minimum of Rao's Q is 0, when all categories in a window have distance 0. If the distance chosen to calculate Rao's Index ranges between 0 and 1, the maximum value of Rao's Index equals the Simpson Index of Diversity \eqn{1-1/S_i} where \emph{S} is the number of categories in window \emph{i}.}
+Unidimension Cumulative Residual Entropy (\eqn{CRE}) is calculated on a numerical vector  as \eqn{CRE = CRE=-\sum_{i=1}^{N}{P(X\geq x_i)\log{P(X\geq x_i)dx}} [1] where  \eqn{ dx=(x_i -x_{i-1})} and \emph{P} is  vector the probability that values of the vector of observation are larger or equal to each value of the vector. 
+	 In the "multidimension" CRE, \emph{P} becomes an array with as dimension as the one of the observation. In each cell of \emph{P} the probability, estimates with the frequency of the number of observation that as the same time satisify the larger or equal requirment for the a different combination of values along the dimension. dx becomes the products of the difference along each dimension. \cr
+The theoretical minimum of CRE is 0, when all values are identical in a window.  The values of CRE increase with the range of the observations and the more the observation are equally spread across values.}
 \value{
-If shannon=TRUE, a list of matrices of length two, otherwise a matrix of deimension \emph{dim(x)}.
+If shannon=TRUE, a list of matrices of length two, otherwise a matrix of dimension \emph{dim(x)}.
 }
 \references{
-[1] Rao, C.R. (1982). Diversity and dissimilarity coefficients: a unified approach. Theoretical Population Biology, 21: 2443.
-[2] Rocchini, D., M. Marcantonio, and C. Ricotta (2017). Measuring Rao’s Q diversity index from remote sensing: An open source solution. Ecological Indicators. 72: 234–238.
+[1] Rao M, Chen Y, Vemuri BC, Wang F (2004) Cumulative Residual Entropy: A New Measure of Information. IEEE Trans Inf Theory 50:1220–1228.
 }
 \author{
 saverio vicario \email{saverio.vicario@cnr.it}\cr
